@@ -4,8 +4,7 @@
 //4. UI ModuleAdd above income to UI
 //5. Data module - Calculate budget
 //6. UI Module - Update budget UI
-//7. New Comment
-//8> new new comment
+
 
 //1. function declared and immediately called
 var budgetController = (function() {
@@ -20,6 +19,16 @@ var budgetController = (function() {
       this.description = description;
       this.value = value;
     };
+
+    var calculateTotal = function(type) {
+        var sum = 0;
+        data.allItems[type].forEach(function (cur) {
+            sum += cur.value;
+
+        });
+        
+        data.totals[type] = sum;
+    }
   
     var data = {
       allItems: {
@@ -29,29 +38,59 @@ var budgetController = (function() {
       totals: {
         exp: 0,
         inc: 0
-      }
+      },
+      budget: 0,
+      percentage: -1,
     };
   
     return {
+        ////allows other modules to add items into our data structure
       addItem: function(type, des, val) {
-        var newItem;
+        var newItem, ID;
   
+
         if (data.allItems[type].length > 0) {
+            //Creat new ID
           ID = data.allItems[type][data.allItems[type].length - 1].id + 1;
         } else {
           ID = 0;
         }
   
-        if (type === "exp") {
+        //create new item based on'imc' or 'exp' type
+         if (type === "exp") {
           newItem = new Expense(ID, des, val);
         } else if (type === "inc") {
           newItem = new Income(ID, des, val);
         }
-  
         data.allItems[type].push(newItem);
         return newItem;
       },
-      //this method is really Important. It is a publci method that exposes internal data
+      calculateBudget: function() {
+
+        //calculate total income and expenses
+        calculateTotal('exp');
+        calculateTotal('inc');
+        //Calculate the budget: income - expenses
+        data.budget = data.totals.inc - data.totals.exp;
+
+        //calculate % of income that we spent
+        if(data.totals.inc > 0) {
+        data.percentage = Math.round((data.totals.inc / data.totals.exp) * 100);
+        }
+        else {
+            data.percentage = -1;
+        }
+      },
+
+      getBudget: function() {
+          return {
+            budget: data.budget,
+            totalInc: data.totals.inc,
+            totalExp: data.totals.exp,
+            percentage: data.percentage,
+          };
+      },
+  
       testing: function() {
         console.log(data);
       }
@@ -132,12 +171,16 @@ var budgetController = (function() {
           ctrlAddItem();
         }
       });
+
     };
   
     var updateBudget = function() {
       //1. Calculate the budget
-      //2. add item to budget controler
+      budgetCtrl.calculateBudget();
+      //2. Return the budget
+      var budget = budgetCtrl.getBudget();
       //3. Display budget on UI
+      console.log(budget);
     };
   
     var ctrlAddItem = function() {
@@ -155,7 +198,7 @@ var budgetController = (function() {
         UICtrl.clearFields();
       }
   
-      //5. Calculate and update budget budget
+      //5. Calculate and update budget
       updateBudget();
   
       //6. Display budget
